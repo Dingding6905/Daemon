@@ -1,0 +1,7 @@
+_options()
+{
+    local curr_arg;
+    curr_arg=${COMP_WORDS[COMP_CWORD]}
+    COMPREPLY=( $(compgen -W 'start stop stop-on-force restart version help ?' -- $curr_arg ) );
+}
+

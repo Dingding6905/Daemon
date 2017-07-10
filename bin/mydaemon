@@ -1,0 +1,75 @@
+#!/bin/sh
+
+set -e
+
+DAEMON_VERSION="v1.0.0"
+DAEMON_NAME="mydaemond"
+
+VERSION="$DAEMON_NAME $DAEMON_VERSION"
+
+cd ../run/
+
+#停止命令
+if [ "$1" == "stop" ]
+then
+	stop.sh $DAEMON_NAME
+
+#启动命令
+elif [ "$1" == "start" ] || [ "$1" == "" ]
+then
+	ret=`ps -ef | grep "mydaemond" | awk '{if ($8 == "mydaemond") {print "the daemond is running"; exit}}'`
+	if [ "$ret" != "" ]
+	then
+		echo "error: The daemond is running"
+		echo -e ""
+		exit
+	else
+		./start.sh $DAEMON_NAME $1
+	fi
+
+#强制停止命令
+elif [ "$1" == "stop-on-force" ]
+then
+	rm -rf ./$DAEMON_NAME.pid
+
+	#awk中$2打印第二列，system执行shell命令，先杀掉主进程再杀子进程
+	ps -ef | grep $DAEMON_NAME | awk '{if ($9 == ":master") {print $2; system("kill -9 " $2)}}'
+	if [ $? -eq 0 ]
+	then
+		#ps -ef | grep $DAEMON_NAME | awk '{if ($8 == "'$DAEMON_NAME'") {print $2; system("kill -9 " $2)}}'
+		ps -ef | grep $DAEMON_NAME | awk '{if ($9 == ":wroker") {print $2; system("kill -9 " $2)}}'
+	fi
+
+	if [ $? -eq 0 ]
+	then
+		echo "$DAEMON_NAME is force stop ok"
+	fi
+
+elif [ "$1" == "restart" ]
+then
+	./stop.sh  $DAEMON_NAME
+
+	if [ -f $DAEMON_NAME ]
+	then
+		rm -rf ./$DAEMON_NAME.pid
+	fi
+
+	./start.sh $DAEMON_NAME
+
+elif [ "$1" == "version" ]
+then
+	echo "version: $VERSION"
+
+elif [ "$1" == "help" ] || [ "$1" == "?" ]
+then
+	echo -e ""
+	echo -e "\t start          :start daemon"
+	echo -e "\t stop           :stop  daemon"
+	echo -e "\t stop-on-force  :stop-on-force daemon"
+	echo -e "\t restart        :restart daemon"
+	echo -e "\t version        :version"
+	echo -e "\t help           :help command"
+	echo -e ""
+fi
+
+
